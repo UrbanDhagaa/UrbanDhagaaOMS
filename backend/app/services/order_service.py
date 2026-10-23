@@ -209,14 +209,25 @@ async def get_orders(
     res = await db.execute(stmt)
     orders = res.scalars().all()
 
-    # Attach paid_amount and payment_remaining per order
+    # Batch fetch payment allocations for all orders on the page in 1 query
+    if orders:
+        order_ids = [order.id for order in orders]
+        paid_stmt = (
+            select(
+                PaymentAllocation.order_id,
+                func.coalesce(func.sum(PaymentAllocation.allocated_amount), 0.0)
+            )
+            .where(PaymentAllocation.order_id.in_(order_ids))
+            .group_by(PaymentAllocation.order_id)
+        )
+        paid_rows = (await db.execute(paid_stmt)).all()
+        paid_map = {row[0]: float(row[1]) for row in paid_rows}
+    else:
+        paid_map = {}
+
     result = []
     for order in orders:
-        paid_stmt = select(func.coalesce(func.sum(PaymentAllocation.allocated_amount), 0.0)).where(
-            PaymentAllocation.order_id == order.id
-        )
-        paid_res = await db.execute(paid_stmt)
-        paid = float(paid_res.scalar() or 0.0)
+        paid = paid_map.get(order.id, 0.0)
         if order.payment_status == "Paid" and paid == 0:
             paid = float(order.total_amount)
         if order.order_status == "Cancelled":

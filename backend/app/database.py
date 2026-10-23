@@ -10,12 +10,24 @@ from app.config import settings
 is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 connect_args = {"check_same_thread": False} if is_sqlite else {"statement_cache_size": 0}
 
+engine_kwargs = {
+    "echo": settings.DEBUG and is_sqlite,
+    "future": True,
+    "pool_pre_ping": True,
+    "connect_args": connect_args,
+}
+
+if not is_sqlite:
+    engine_kwargs.update({
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 30,
+        "pool_recycle": 1800,
+    })
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG and is_sqlite,
-    future=True,
-    pool_pre_ping=True,
-    connect_args=connect_args
+    **engine_kwargs
 )
 
 AsyncSessionLocal = async_sessionmaker(

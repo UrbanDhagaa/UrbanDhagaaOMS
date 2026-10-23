@@ -115,26 +115,47 @@ async def get_customers(
     res = await db.execute(stmt)
     customers = res.scalars().all()
 
-    # Attach total_paid and payment_remaining for each customer
+    # Batch fetch total_paid and total_ordered for all customers on the page
+    if customers:
+        cust_ids = [c.id for c in customers]
+
+        pay_stmt = (
+            select(
+                Payment.customer_id,
+                func.coalesce(func.sum(Payment.amount), 0.0)
+            )
+            .where(
+                Payment.customer_id.in_(cust_ids),
+                Payment.status == "COMPLETED"
+            )
+            .group_by(Payment.customer_id)
+        )
+        pay_rows = (await db.execute(pay_stmt)).all()
+        pay_map = {row[0]: float(row[1]) for row in pay_rows}
+
+        ord_stmt = (
+            select(
+                Order.customer_id,
+                func.coalesce(func.sum(Order.total_amount), 0.0)
+            )
+            .where(
+                Order.customer_id.in_(cust_ids),
+                Order.order_status != "Cancelled"
+            )
+            .group_by(Order.customer_id)
+        )
+        ord_rows = (await db.execute(ord_stmt)).all()
+        ord_map = {row[0]: float(row[1]) for row in ord_rows}
+    else:
+        pay_map = {}
+        ord_map = {}
+
     result = []
     for c in customers:
-        pay_stmt = select(func.coalesce(func.sum(Payment.amount), 0)).where(
-            Payment.customer_id == c.id,
-            Payment.status == "COMPLETED"
-        )
-        pay_res = await db.execute(pay_stmt)
-        total_paid = float(pay_res.scalar() or 0)
-
-        # Sum total_amount of all non-cancelled orders for this customer
-        ord_stmt = select(func.coalesce(func.sum(Order.total_amount), 0.0)).where(
-            Order.customer_id == c.id,
-            Order.order_status != "Cancelled"
-        )
-        ord_res = await db.execute(ord_stmt)
-        total_ordered = float(ord_res.scalar() or 0.0)
+        total_paid = pay_map.get(c.id, 0.0)
+        total_ordered = ord_map.get(c.id, 0.0)
         payment_remaining = max(0.0, total_ordered - total_paid)
 
-        # Attach as attributes so Pydantic can read them
         c.__dict__['total_paid'] = total_paid
         c.__dict__['payment_remaining'] = payment_remaining
         result.append(c)
