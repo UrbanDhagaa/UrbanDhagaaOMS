@@ -238,24 +238,10 @@ export default function App() {
               {authLoading ? 'Signing in...' : 'Sign In to OMS'}
             </button>
           </form>
-
-          <div
-            style={{
-              marginTop: 20,
-              padding: '12px 14px',
-              background: '#f8fafc',
-              borderRadius: 6,
-              fontSize: 12,
-              color: 'var(--text-muted)',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <div><strong>Default Admin:</strong> admin@urbandhagaa.com</div>
-            <div><strong>Password:</strong> Admin@12345</div>
-          </div>
         </div>
       </div>
     );
+
   }
 
   return (
