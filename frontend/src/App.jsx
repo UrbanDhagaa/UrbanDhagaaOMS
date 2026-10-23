@@ -33,10 +33,11 @@ export default function App() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Login form state
-  const [email, setEmail] = useState('admin@urbandhagaa.com');
-  const [password, setPassword] = useState('Admin@12345');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
 
   // Data states
   const [kpis, setKpis] = useState(null);
@@ -212,8 +213,10 @@ export default function App() {
               <input
                 type="email"
                 className="form-input"
+                placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
@@ -223,11 +226,14 @@ export default function App() {
               <input
                 type="password"
                 className="form-input"
+                placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
             </div>
+
 
             <button
               type="submit"
