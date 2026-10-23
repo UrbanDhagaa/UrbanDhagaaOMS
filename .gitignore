@@ -1,0 +1,56 @@
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Local Database & SQLite files
+*.db
+*.sqlite
+*.sqlite3
+urbandhagaa.db
+tools/
+
+
+# Secrets & Environment variables (DO NOT COMMIT SECRETS)
+.env
+.env*.local
+backend/.env
+frontend/.env
+frontend/.env.local
+*.pem
+*.key
+
+# Frontend Node & Vite build outputs
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+dist-ssr/
+frontend/dist-ssr/
+.vercel/
+frontend/.vercel/
+
+# Logs & Temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE & System files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
