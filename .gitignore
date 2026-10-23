@@ -23,12 +23,17 @@ tools/
 
 # Secrets & Environment variables (DO NOT COMMIT SECRETS)
 .env
-.env*.local
+.env.local
 backend/.env
 frontend/.env
 frontend/.env.local
 *.pem
 *.key
+
+# Allow example env files (these are safe to commit)
+!.env.example
+!frontend/.env.example
+!backend/.env.example
 
 # Frontend Node & Vite build outputs
 node_modules/
@@ -39,6 +44,11 @@ dist-ssr/
 frontend/dist-ssr/
 .vercel/
 frontend/.vercel/
+
+# Allow vercel.json configuration files (needed for deployment)
+!vercel.json
+!frontend/vercel.json
+
 
 # Logs & Temporary files
 *.log
