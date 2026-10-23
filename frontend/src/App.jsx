@@ -27,9 +27,14 @@ import OrderDetailModal from './components/OrderDetailModal';
 import CreateCustomerModal from './components/CreateCustomerModal';
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(tokenStorage.get());
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [token, setToken] = useState(() => tokenStorage.get());
+  const [user, setUser] = useState(() => tokenStorage.getUser());
+  const [isInitializing, setIsInitializing] = useState(() => {
+    return !!tokenStorage.get() && !tokenStorage.getUser();
+  });
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('ud_active_tab') || 'dashboard';
+  });
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Login form state
@@ -63,8 +68,26 @@ export default function App() {
   const [customerEdits, setCustomerEdits] = useState({});
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      tokenStorage.clear();
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('ud_active_tab', activeTab);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     if (token) {
       loadCurrentUser();
+    } else {
+      setIsInitializing(false);
     }
   }, [token]);
 
@@ -77,11 +100,18 @@ export default function App() {
   async function loadCurrentUser() {
     try {
       const me = await api.getMe();
+      tokenStorage.setUser(me);
       setUser(me);
     } catch (err) {
-      tokenStorage.clear();
-      setToken(null);
-      setUser(null);
+      if (err?.status === 401) {
+        tokenStorage.clear();
+        setToken(null);
+        setUser(null);
+      } else {
+        console.warn('Background auth check failed (network/server status):', err.message);
+      }
+    } finally {
+      setIsInitializing(false);
     }
   }
 
@@ -94,6 +124,7 @@ export default function App() {
       await api.seedAdmin().catch(() => {});
       const res = await api.login(email, password);
       tokenStorage.set(res.access_token);
+      tokenStorage.setUser(res.user);
       setToken(res.access_token);
       setUser(res.user);
     } catch (err) {
@@ -165,6 +196,21 @@ export default function App() {
       ...prev,
       [customerId]: { ...(prev[customerId] || {}), [field]: value },
     }));
+  }
+
+  // If verifying an existing session without cached profile
+  if (isInitializing) {
+    return (
+      <div className="login-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <img src="/logo.png" alt="UrbanDhagaa Logo" className="brand-logo" style={{ height: 40, marginBottom: 16 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 14 }}>
+            <RefreshCw size={18} className="spin" />
+            <span>Resuming session...</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If not logged in, render clean minimal login screen

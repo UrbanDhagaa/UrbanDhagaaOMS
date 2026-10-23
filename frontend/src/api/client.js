@@ -5,7 +5,25 @@ const BASE_URL = `${API_BASE}/api/v1`;
 export const tokenStorage = {
   get: () => localStorage.getItem('ud_access_token'),
   set: (token) => localStorage.setItem('ud_access_token', token),
-  clear: () => localStorage.removeItem('ud_access_token'),
+  getUser: () => {
+    try {
+      const userStr = localStorage.getItem('ud_user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  },
+  setUser: (user) => {
+    if (user) {
+      localStorage.setItem('ud_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('ud_user');
+    }
+  },
+  clear: () => {
+    localStorage.removeItem('ud_access_token');
+    localStorage.removeItem('ud_user');
+  },
 };
 
 async function request(endpoint, options = {}) {
@@ -30,7 +48,9 @@ async function request(endpoint, options = {}) {
 
   if (!response.ok) {
     const errorMsg = data?.detail || response.statusText || 'Request failed';
-    throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+    const error = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+    error.status = response.status;
+    throw error;
   }
 
   return data;
